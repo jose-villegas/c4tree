@@ -2,6 +2,8 @@ name: Tests
 
 # The unit tests on Linux and Windows, with LikeC4's validator installed at
 # the pinned version so the written models are checked by LikeC4 itself.
+# Python 3.12 runs too: the oldest Python a caller runs c4tree on (the
+# ESP-IDF image's).
 
 on:
   push:
@@ -18,18 +20,23 @@ permissions:
 
 jobs:
   test:
-    name: Tests (${{ matrix.os }})
+    name: Tests (${{ matrix.os }}${{ matrix.python && format(', Python {0}', matrix.python) || '' }})
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-2025]
+        include:
+          - os: ubuntu-24.04
+          - os: windows-2025
+          - os: ubuntu-24.04
+            python: 3.12.10
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version-file: .python-version
+          python-version: ${{ matrix.python }}
+          python-version-file: ${{ !matrix.python && '.python-version' || '' }}
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .node-version
