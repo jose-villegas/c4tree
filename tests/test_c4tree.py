@@ -1007,6 +1007,16 @@ class Site(unittest.TestCase):
             with self.assertRaisesRegex(SystemExit, re.escape('npm ci --prefix ' + temp)):
                 site.validate(temp, {'name': 'fixture'})
 
+    def test_a_base_that_is_not_a_url_path_fails_before_anything_runs(self):
+        for base in ('/C:/Program Files/Git/loupe/', 'C:\\site\\', '/loupe', 'loupe/'):
+            with self.subTest(base=base), mock.patch('sys.stderr') as stderr, \
+                    mock.patch.object(site, 'validate') as validate:
+                with self.assertRaises(SystemExit):
+                    site.main(['model', '-o', 'out', '--base', base])
+                validate.assert_not_called()
+                self.assertIn('MSYS_NO_PATHCONV=1', ''.join(c.args[0] for c in stderr.write.call_args_list))
+        self.assertEqual(site.url_path('/loupe/'), '/loupe/')
+
     def test_validation_precedes_build_and_failure_stops_it(self):
         with mock.patch.object(pathlib.Path, 'read_text', return_value='{"name": "fixture", "title": "Fixture"}'), \
              mock.patch.object(site, 'validate', side_effect=subprocess.CalledProcessError(1, ['node'])) as check, \

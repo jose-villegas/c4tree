@@ -44,11 +44,21 @@ def open_view(site, view):
     index.write_text(text.replace('<head>', '<head>' + OPEN_VIEW.format(view=view), 1), encoding='utf-8')
 
 
+def url_path(base):
+    """`--base` as given, when it is a URL path: /<path>/, no drive or
+    backslash. A shell that turns /path/ into a Windows path (Git Bash does)
+    would otherwise build a site whose every asset 404s."""
+    if not (base.startswith('/') and base.endswith('/')) or ':' in base or '\\' in base:
+        raise argparse.ArgumentTypeError(
+            f'{base!r} is not a URL path like /<repository>/; in Git Bash, set MSYS_NO_PATHCONV=1')
+    return base
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('model', type=pathlib.Path)
     parser.add_argument('-o', '--out', required=True, type=pathlib.Path)
-    parser.add_argument('--base')
+    parser.add_argument('--base', type=url_path)
     parser.add_argument('--open', metavar='VIEW', help='view the root opens, e.g. index')
     args = parser.parse_args(argv)
     config = json.loads((args.model / 'likec4.config.json').read_text(encoding='utf-8'))
